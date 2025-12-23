@@ -1,0 +1,66 @@
+# SeaweedFS Helm Values for Mimir S3-Compatible Object Storage
+# This provides an S3-compatible API backed by your default StorageClass
+
+global:
+  # Use the NFS storage class created in nfs-storage.yaml
+  storageClassName: "nfs-storage"
+
+master:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 5Gi
+
+volume:
+  replicas: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+
+filer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    size: 5Gi
+  # Enable S3 API
+  s3:
+    enabled: true
+    port: 8333
+
+s3:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # S3 credentials - CHANGE THESE IN PRODUCTION
+  auth:
+    enabled: true
+    existingConfigSecret: seaweedfs-s3-secret
+
+# Create the S3 credentials secret separately

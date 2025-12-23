@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seaweedfs-create-buckets
+  namespace: seaweedfs
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: "mimir-access-key"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "mimir-secret-key-change-me"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for SeaweedFS S3 to be ready
+              echo "Waiting for SeaweedFS S3 to be ready..."
+              sleep 30
+              
+              # Configure mc alias
+              mc alias set seaweedfs http://seaweedfs-s3:8333 $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY
+              
+              # Create buckets for Mimir
+              mc mb --ignore-existing seaweedfs/mimir-blocks
+              mc mb --ignore-existing seaweedfs/mimir-ruler
+              mc mb --ignore-existing seaweedfs/mimir-alertmanager
+              
+              echo "Buckets created successfully!"
+              mc ls seaweedfs

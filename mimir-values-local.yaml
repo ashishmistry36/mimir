@@ -1,0 +1,186 @@
+# Grafana Mimir Helm Values for LOCAL TESTING (minikube)
+# Reduced resources for single-node testing
+
+# Use classic architecture preset (no Kafka dependency)
+deploymentMode: SimpleScalable
+
+# Disable built-in MinIO (we use SeaweedFS instead)
+minio:
+  enabled: false
+
+# Disable built-in Kafka
+kafka:
+  enabled: false
+
+# Configure Mimir components
+mimir:
+  structuredConfig:
+    # Disable multi-tenancy for simpler setup
+    multitenancy_enabled: false
+
+    # Common S3 storage configuration pointing to SeaweedFS
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+          region: us-east-1
+          access_key_id: mimir-access-key
+          secret_access_key: mimir-secret-key-change-me
+          insecure: true
+          http:
+            insecure_skip_verify: true
+
+    # Block storage (main metrics data)
+    blocks_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-blocks
+
+    # Alertmanager storage
+    alertmanager_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-alertmanager
+
+    # Ruler storage
+    ruler_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-ruler
+
+    # Minimal replication for local testing
+    ingester:
+      ring:
+        replication_factor: 1
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: 1
+
+# Minimal sizing for local testing
+distributor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+ingester:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+  zoneAwareReplication:
+    enabled: false
+
+querier:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+query_frontend:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+query_scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+compactor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+
+store_gateway:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+  zoneAwareReplication:
+    enabled: false
+
+ruler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+alertmanager:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  persistentVolume:
+    enabled: true
+    size: 1Gi
+
+# NGINX gateway
+nginx:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Rollout operator
+rollout_operator:
+  enabled: true
+
+# Disable overrides exporter
+overrides_exporter:
+  enabled: false

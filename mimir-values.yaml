@@ -1,0 +1,191 @@
+# Grafana Mimir Helm Values
+# Uses classic architecture (no Kafka) with SeaweedFS for S3-compatible storage
+
+# Use classic architecture preset (no Kafka dependency)
+deploymentMode: SimpleScalable
+
+# Disable built-in MinIO (we use SeaweedFS instead)
+minio:
+  enabled: false
+
+# Disable built-in Kafka (using classic architecture)
+kafka:
+  enabled: false
+
+# Configure Mimir components
+mimir:
+  structuredConfig:
+    # Disable multi-tenancy for simpler setup
+    multitenancy_enabled: false
+    
+    # Disable Kafka-based ingest storage (use classic write path)
+    ingest_storage:
+      enabled: false
+
+    
+    # Common S3 storage configuration pointing to SeaweedFS
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+          region: us-east-1
+          access_key_id: mimir-access-key
+          secret_access_key: mimir-secret-key-change-me
+          insecure: true  # SeaweedFS uses HTTP by default
+          http:
+            insecure_skip_verify: true
+
+    # Block storage (main metrics data)
+    blocks_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-blocks
+
+    # Alertmanager storage
+    alertmanager_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-alertmanager
+
+    # Ruler storage (recording/alerting rules)
+    ruler_storage:
+      backend: s3
+      s3:
+        bucket_name: mimir-ruler
+
+    # Reduce replication for small deployments
+    ingester:
+      ring:
+        replication_factor: 1
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: 1
+
+# Component sizing for small deployment (~1M series)
+distributor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingester:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+  zoneAwareReplication:
+    enabled: false
+
+querier:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+query_frontend:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+query_scheduler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+compactor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+
+store_gateway:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+  zoneAwareReplication:
+    enabled: false
+
+ruler:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+alertmanager:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  persistentVolume:
+    enabled: true
+    size: 1Gi
+
+# NGINX gateway
+nginx:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Rollout operator for safe updates
+rollout_operator:
+  enabled: true
+
+# Overrides exporter (optional, for per-tenant limits)
+overrides_exporter:
+  enabled: false

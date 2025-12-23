@@ -1,0 +1,53 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-storage
+provisioner: k8s-sigs.io/nfs-subdir-external-provisioner # You may need to install this provisioner
+parameters:
+  archiveOnDelete: "false"
+mountOptions:
+  - hard
+  - nfsvers=4.1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-client-provisioner
+  namespace: nfs-system
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-client-provisioner
+  namespace: nfs-system
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-client-provisioner
+          image: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: k8s-sigs.io/nfs-subdir-external-provisioner
+            - name: NFS_SERVER
+              value: 192.168.1.100 # Change to your NFS server IP
+            - name: NFS_PATH
+              value: /export/k8s # Change to your NFS export path
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.1.100 # Change to your NFS server IP
+            path: /export/k8s # Change to your NFS export path

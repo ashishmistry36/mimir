@@ -1,9 +1,9 @@
 # SeaweedFS Helm Values for Mimir S3-Compatible Object Storage
-# This provides an S3-compatible API backed by your default StorageClass
+# Deploy to seaweedfs namespace with prometheus storage class
 
 global:
-  # Use the NFS storage class created in nfs-storage.yaml
-  storageClassName: "nfs-storage"
+  # Use the prometheus storage class
+  storageClassName: "prometheus"
 
 master:
   replicas: 1
@@ -62,5 +62,3 @@ s3:
   auth:
     enabled: true
     existingConfigSecret: seaweedfs-s3-secret
-
-# Create the S3 credentials secret separately

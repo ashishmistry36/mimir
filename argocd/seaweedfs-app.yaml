@@ -1,0 +1,32 @@
+# ArgoCD Application for SeaweedFS
+# Deploy to seaweedfs namespace using local chart
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seaweedfs
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    # Local chart from this repo (patched to remove security-configmap.yaml)
+    repoURL: https://github.com/YOUR_ORG/mimir-work.git  # TODO: Update with your repo URL
+    targetRevision: HEAD
+    path: seaweedfs
+    helm:
+      valueFiles:
+        - ../seaweedfs-values.yaml
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: seaweedfs
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

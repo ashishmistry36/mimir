@@ -1,14 +1,11 @@
 # Grafana Mimir Helm Values
 # Uses classic architecture (no Kafka) with SeaweedFS for S3-compatible storage
 
-# Use classic architecture preset (no Kafka dependency)
-deploymentMode: SimpleScalable
-
 # Disable built-in MinIO (we use SeaweedFS instead)
 minio:
   enabled: false
 
-# Disable built-in Kafka (using classic architecture)
+# Disable built-in Kafka (using classic write path, not ingest storage)
 kafka:
   enabled: false
 
@@ -18,10 +15,14 @@ mimir:
     # Disable multi-tenancy for simpler setup
     multitenancy_enabled: false
     
-    # Disable Kafka-based ingest storage (use classic write path)
+    # Disable ingest storage (use classic write path, not Kafka)
     ingest_storage:
       enabled: false
-
+    
+    # Increase limits for single-tenant deployment
+    limits:
+      ingestion_rate: 50000
+      ingestion_burst_size: 500000
     
     # Common S3 storage configuration pointing to SeaweedFS
     common:
@@ -54,8 +55,9 @@ mimir:
       s3:
         bucket_name: mimir-ruler
 
-    # Reduce replication for small deployments
+    # Enable traditional gRPC push and reduce replication
     ingester:
+      push_grpc_method_enabled: true
       ring:
         replication_factor: 1
 
@@ -170,8 +172,8 @@ alertmanager:
     enabled: true
     size: 1Gi
 
-# NGINX gateway
-nginx:
+# Gateway (replaces nginx in newer versions)
+gateway:
   enabled: true
   replicas: 1
   resources:
@@ -181,6 +183,10 @@ nginx:
     limits:
       cpu: 200m
       memory: 256Mi
+
+# Disable nginx (gateway is used instead)
+nginx:
+  enabled: false
 
 # Rollout operator for safe updates
 rollout_operator:

@@ -3,7 +3,7 @@
 
 global:
   # Use the prometheus storage class
-  storageClassName: "prometheus"
+  storageClassName: "standard"
 
 master:
   replicas: 1
@@ -58,7 +58,5 @@ s3:
     limits:
       cpu: 500m
       memory: 256Mi
-  # S3 credentials - CHANGE THESE IN PRODUCTION
-  auth:
-    enabled: true
-    existingConfigSecret: seaweedfs-s3-secret
+  enableAuth: true
+  existingConfigSecret: seaweedfs-s3-secret

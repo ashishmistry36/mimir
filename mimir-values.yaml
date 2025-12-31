@@ -88,6 +88,7 @@ ingester:
   persistentVolume:
     enabled: true
     size: 10Gi
+    storageClass: "standard-sc"
   zoneAwareReplication:
     enabled: false
 
@@ -133,6 +134,7 @@ compactor:
   persistentVolume:
     enabled: true
     size: 10Gi
+    storageClass: "standard-sc"
 
 store_gateway:
   replicas: 1
@@ -146,6 +148,7 @@ store_gateway:
   persistentVolume:
     enabled: true
     size: 5Gi
+    storageClass: "standard-sc"
   zoneAwareReplication:
     enabled: false
 
@@ -171,6 +174,7 @@ alertmanager:
   persistentVolume:
     enabled: true
     size: 1Gi
+    storageClass: "standard-sc"
 
 # Gateway (replaces nginx in newer versions)
 gateway:

@@ -1,0 +1,66 @@
+# Kube-Prometheus-Stack Helm Values (Monitoring Namespace)
+# Optimized for Multi-Node & GPU Workloads
+
+prometheus:
+  prometheusSpec:
+    # Remote write to Mimir
+    remoteWrite:
+      - url: http://mimir-gateway.mimir.svc.cluster.local:80/api/v1/push
+    
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    
+    # Enable persistent storage for Prometheus cache
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: "standard-sc"
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  enabled: true
+  adminPassword: admin
+  
+  # Allow the chart to create its default datasource
+  # We will just add Mimir as an additional one (NOT default to avoid conflict)
+  additionalDataSources:
+    - name: Mimir
+      type: prometheus
+      url: http://mimir-gateway.mimir.svc.cluster.local:80/prometheus
+      access: proxy
+      isDefault: false
+      editable: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Enable persistent storage for Grafana (dashboards, users)
+  persistence:
+    enabled: true
+    storageClassName: "standard-sc"
+    size: 2Gi
+
+nodeExporter:
+  enabled: true
+
+kube-state-metrics:
+  enabled: true
+  metricLabelsAllowlist:
+    - pods=[*]
+    - nodes=[*]

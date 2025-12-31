@@ -1,12 +1,16 @@
 # SeaweedFS Helm Values for Mimir S3-Compatible Object Storage
-# Deploy to seaweedfs namespace with prometheus storage class
+# Optimized for high-performance tiered storage
 
 global:
-  # Use the prometheus storage class
-  storageClassName: "standard"
+  # Main storage layer
+  storageClassName: "seaweedfs-sc"
 
 master:
   replicas: 1
+  data:
+    type: "persistentVolumeClaim"
+    size: "5Gi"
+    storageClass: "seaweedfs-sc"
   resources:
     requests:
       cpu: 100m
@@ -14,12 +18,15 @@ master:
     limits:
       cpu: 500m
       memory: 512Mi
-  persistence:
-    enabled: true
-    size: 5Gi
 
 volume:
-  replicas: 3
+  replicas: 1
+  affinity: {}
+  dataDirs:
+    - name: data1
+      type: "persistentVolumeClaim"
+      size: "20Gi"
+      storageClass: "seaweedfs-sc"
   resources:
     requests:
       cpu: 100m
@@ -27,12 +34,13 @@ volume:
     limits:
       cpu: 1000m
       memory: 1Gi
-  persistence:
-    enabled: true
-    size: 20Gi
 
 filer:
   replicas: 1
+  data:
+    type: "persistentVolumeClaim"
+    size: "5Gi"
+    storageClass: "seaweedfs-sc"
   resources:
     requests:
       cpu: 100m
@@ -40,9 +48,6 @@ filer:
     limits:
       cpu: 500m
       memory: 512Mi
-  persistence:
-    enabled: true
-    size: 5Gi
   # Enable S3 API
   s3:
     enabled: true

@@ -1,20 +1,19 @@
 #!/bin/bash
 # Mimir Stack Installation Script
-# Deploys: SeaweedFS (S3) -> Mimir -> Kube-Prometheus-Stack
+# Deploys: SeaweedFS (S3) + Mimir in 'mimir' namespace, Prometheus/Grafana in 'monitoring' namespace
 
 set -e
 
-echo "=== Mimir Monitoring Stack Installation (Operator Version) ==="
+echo "=== Mimir Monitoring Stack Installation ==="
 echo ""
-echo "Components:"
-echo "  - SeaweedFS (S3-compatible object storage)"
-echo "  - Mimir (long-term metrics storage)"
-echo "  - Kube-Prometheus-Stack (Prometheus Operator, Grafana, Node Exporter)"
+echo "Namespaces:"
+echo "  - mimir: SeaweedFS + Mimir (long-term metrics storage)"
+echo "  - monitoring: Kube-Prometheus-Stack (Prometheus, Grafana, Node Exporter)"
 echo ""
 
 # Wait for potential deletions from uninstall.sh
 echo "Ensuring namespaces are clean..."
-kubectl delete namespace mimir monitoring seaweedfs --ignore-not-found --wait=true || true
+kubectl delete namespace mimir monitoring --ignore-not-found --wait=true || true
 
 # Add Helm repos
 echo "Step 1: Adding Helm repositories..."
@@ -27,13 +26,12 @@ helm repo update
 echo ""
 echo "Step 2: Creating namespaces and storage classes..."
 kubectl apply -f storage-classes.yaml
-kubectl apply -f seaweedfs-namespace.yaml
 kubectl apply -f namespace.yaml
 kubectl apply -f monitoring-namespace.yaml
 
-# Deploy SeaweedFS
+# Deploy SeaweedFS (in mimir namespace)
 echo ""
-echo "Step 3: Deploying SeaweedFS..."
+echo "Step 3: Deploying SeaweedFS (in mimir namespace)..."
 kubectl apply -f seaweedfs-s3-secret.yaml
 
 # Always use a fresh SeaweedFS chart to ensure clean templates
@@ -43,28 +41,28 @@ helm pull seaweedfs/seaweedfs --untar
 rm -f seaweedfs/templates/shared/security-configmap.yaml
 
 # Check if SeaweedFS is already installed
-if helm status seaweedfs -n seaweedfs &>/dev/null; then
+if helm status seaweedfs -n mimir &>/dev/null; then
     echo "SeaweedFS already installed, upgrading..."
     helm upgrade seaweedfs ./seaweedfs \
-      -n seaweedfs \
+      -n mimir \
       -f seaweedfs-values.yaml
 else
     helm install seaweedfs ./seaweedfs \
-      -n seaweedfs \
+      -n mimir \
       -f seaweedfs-values.yaml
 fi
 
 echo "Waiting for SeaweedFS to be ready..."
 # Wait for pods to at least exist
 sleep 10
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=seaweedfs -n seaweedfs --timeout=300s || true
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=seaweedfs -n mimir --timeout=300s || true
 sleep 30
 
 # Create buckets
 echo ""
 echo "Step 4: Creating S3 buckets..."
 # Delete old job if it exists
-kubectl delete job seaweedfs-create-buckets -n seaweedfs --ignore-not-found
+kubectl delete job seaweedfs-create-buckets -n mimir --ignore-not-found
 kubectl apply -f seaweedfs-create-buckets.yaml
 
 # Wait for bucket creation
@@ -107,10 +105,10 @@ echo ""
 echo "=== Installation Complete ==="
 echo ""
 echo "Pod Status:"
+echo "--- mimir namespace (SeaweedFS + Mimir) ---"
 kubectl get pods -n mimir
 echo ""
-kubectl get pods -n seaweedfs
-echo ""
+echo "--- monitoring namespace (Prometheus + Grafana) ---"
 kubectl get pods -n monitoring
 echo ""
 

@@ -23,7 +23,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: "standard-sc"
+          storageClassName: "monitoring"
           resources:
             requests:
               storage: 10Gi
@@ -53,8 +53,11 @@ grafana:
   # Enable persistent storage for Grafana (dashboards, users)
   persistence:
     enabled: true
-    storageClassName: "standard-sc"
+    storageClassName: "monitoring"
     size: 2Gi
+
+  initChownData:
+    enabled: false
 
 nodeExporter:
   enabled: true

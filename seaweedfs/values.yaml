@@ -401,6 +401,10 @@ volume:
   # Volume server's rack name
   rack: null
 
+  # Stable identifier for the volume server, independent of IP address
+  # Useful for Kubernetes environments with hostPath volumes to maintain stable identity
+  id: null
+
   # Volume server's data center name
   dataCenter: null
 
@@ -1008,7 +1012,7 @@ s3:
   ingress:
     enabled: false
     className: ""
-    # host: false for "*" hostname
+    # host: false for "*" hostname, or an array for multiple hostnames
     host: "seaweedfs.cluster.local"
     path: "/"
     pathType: Prefix
@@ -1227,8 +1231,8 @@ worker:
   metricsPort: 9327
 
   # Admin server to connect to
-  # Format: "host:port" or auto-discover from admin service
   adminServer: ""
+
 
   # Worker capabilities - comma-separated list
   # Available: vacuum, balance, erasure_coding
@@ -1302,10 +1306,11 @@ worker:
   extraEnvironmentVars: {}
 
   # Health checks for worker pods
-  # Since workers do not have an HTTP endpoint, a tcpSocket probe on the metrics port is recommended.
+  # Workers expose /health (liveness) and /ready (readiness) endpoints on the metricsPort
   livenessProbe:
     enabled: true
-    tcpSocket:
+    httpGet:
+      path: /health
       port: metrics
     initialDelaySeconds: 30
     periodSeconds: 60
@@ -1315,7 +1320,8 @@ worker:
 
   readinessProbe:
     enabled: true
-    tcpSocket:
+    httpGet:
+      path: /ready
       port: metrics
     initialDelaySeconds: 20
     periodSeconds: 15

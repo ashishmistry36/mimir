@@ -23,13 +23,19 @@ mimir:
     limits:
       ingestion_rate: 50000
       ingestion_burst_size: 500000
+      # Series limits (default is 150000)
+      max_global_series_per_user: 500000
+      max_global_series_per_metric: 50000
+      # Metadata limits
+      max_global_metadata_per_user: 100000
+      max_global_metadata_per_metric: 10000
     
     # Common S3 storage configuration pointing to SeaweedFS
     common:
       storage:
         backend: s3
         s3:
-          endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+          endpoint: seaweedfs-s3.mimir.svc.cluster.local:8333
           region: us-east-1
           access_key_id: mimir-access-key
           secret_access_key: mimir-secret-key-change-me
@@ -88,7 +94,7 @@ ingester:
   persistentVolume:
     enabled: true
     size: 10Gi
-    storageClass: "standard-sc"
+    storageClass: "mimir"
   zoneAwareReplication:
     enabled: false
 
@@ -134,7 +140,7 @@ compactor:
   persistentVolume:
     enabled: true
     size: 10Gi
-    storageClass: "standard-sc"
+    storageClass: "mimir"
 
 store_gateway:
   replicas: 1
@@ -148,7 +154,7 @@ store_gateway:
   persistentVolume:
     enabled: true
     size: 5Gi
-    storageClass: "standard-sc"
+    storageClass: "mimir"
   zoneAwareReplication:
     enabled: false
 
@@ -174,7 +180,7 @@ alertmanager:
   persistentVolume:
     enabled: true
     size: 1Gi
-    storageClass: "standard-sc"
+    storageClass: "mimir"
 
 # Gateway (replaces nginx in newer versions)
 gateway:

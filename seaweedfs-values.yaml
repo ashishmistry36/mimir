@@ -1,16 +1,16 @@
 # SeaweedFS Helm Values for Mimir S3-Compatible Object Storage
-# Optimized for high-performance tiered storage
+# Deployed in the 'mimir' namespace alongside Mimir
 
 global:
   # Main storage layer
-  storageClassName: "seaweedfs-sc"
+  storageClassName: "mimir"
 
 master:
   replicas: 1
   data:
     type: "persistentVolumeClaim"
     size: "5Gi"
-    storageClass: "seaweedfs-sc"
+    storageClass: "mimir"
   resources:
     requests:
       cpu: 100m
@@ -22,11 +22,14 @@ master:
 volume:
   replicas: 1
   affinity: {}
+  # Increase max volumes (default is 7, which is too low for Mimir's multiple collections)
+  maxVolumes: 100
   dataDirs:
     - name: data1
       type: "persistentVolumeClaim"
       size: "20Gi"
-      storageClass: "seaweedfs-sc"
+      storageClass: "mimir"
+      maxVolumes: 100
   resources:
     requests:
       cpu: 100m
@@ -40,7 +43,7 @@ filer:
   data:
     type: "persistentVolumeClaim"
     size: "5Gi"
-    storageClass: "seaweedfs-sc"
+    storageClass: "mimir"
   resources:
     requests:
       cpu: 100m
@@ -48,9 +51,9 @@ filer:
     limits:
       cpu: 500m
       memory: 512Mi
-  # Enable S3 API
+  # Disable S3 on filer (using standalone S3 component)
   s3:
-    enabled: true
+    enabled: false
     port: 8333
 
 s3:
